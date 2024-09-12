@@ -4,8 +4,10 @@ from tkinter import messagebox
 import sqlite3
 
 from Frame.add_boisson_frame import add_boisson
+from Frame.edit_boisson_frame import modifier_boisson_frame
 from Frame.fenetre1 import create_frame1
 from Frame.fenetre2 import create_frame2
+from Frame.list_boisson_frame import list_boisson_frame
 
 class Application(tk.Tk):
     def __init__(self):
@@ -31,7 +33,9 @@ class Application(tk.Tk):
        
         #root.config(menu=menuBar)
         boisson.add_command(label='Ajouter une boisson',command=self.show_add_boisson)
-        boisson.add_command(label='Liste des boissons')
+        boisson.add_command(label='Liste des boissons',command=self.show_list_boisson)
+        boisson.add_separator()
+        boisson.add_command(label="Modifier une boisson",command=self.show_edit_boisson)
 
         #Utilisateur
         user = tk.Menu(menu_bar,tearoff=0)
@@ -64,10 +68,14 @@ class Application(tk.Tk):
         self.frame1 = tk.Frame(self)
         self.frame2 = tk.Frame(self)
         self.frame3_add_b = tk.Frame(self)
+        self.frame3_list_b = tk.Frame(self)
+        self.frame3_edit_b = tk.Frame(self)
         
         create_frame1(self.frame1)
         create_frame2(self.frame2)
         add_boisson(self.frame3_add_b)
+        list_boisson_frame(self.frame3_list_b)
+        modifier_boisson_frame(self.frame3_edit_b)
         
         self.current_frame = None
         self.show_frame1()
@@ -89,6 +97,18 @@ class Application(tk.Tk):
             self.current_frame.pack_forget()
         self.frame3_add_b.pack(fill='both',expand=True)
         self.current_frame = self.frame3_add_b
+
+    def show_list_boisson(self):
+        if self.current_frame is not None:
+            self.current_frame.pack_forget()
+        self.frame3_list_b.pack(fill='both',expand=True)
+        self.current_frame = self.frame3_list_b
+
+    def show_edit_boisson(self):
+        if self.current_frame is not None:
+            self.current_frame.pack_forget()
+        self.frame3_edit_b.pack(fill='both',expand=True)
+        self.current_frame = self.frame3_edit_b
 
 def check_login():
     username = entry_username.get()
