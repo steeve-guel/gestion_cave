@@ -5,7 +5,7 @@ from tkinter import ttk
 import tkinter
 from tkinter import messagebox
 from hashlib import sha256
-
+from tkcalendar import Calendar, DateEntry
 
 
 def add_vente_frame(frame):
@@ -28,6 +28,7 @@ def add_vente_frame(frame):
         _quantite_commandee = quantite_name_entry.get()
         _mode_paiement = mode_paiement_combobox.get()
         _motant = montant_spinbox.get()
+        _date = date_entry.get()
 
         if _user_nom and _user_prenom and _user_phone and _user_ville and _boisson_name and _boisson_type and _boisson_price and _boisson_volume and _quantite_commandee and _mode_paiement and _motant:
             # hashed_password = sha256(_user_password.encode()).hexdigest()
@@ -37,12 +38,12 @@ def add_vente_frame(frame):
                 data_insert_query = '''INSERT INTO ventes (nom_client, prenom_client, ville, telephone,
                                         boisson_name, boisson_type, boisson_volume,
                                         boisson_prix_unitaire, quantite_commandee, mode_paiement,
-                                        montant) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'''
+                                        montant,date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'''
                 
                 data_insert_tuple = (_user_nom,_user_prenom,
                                      _user_ville,_user_phone,_boisson_name,
                                      _boisson_type,_boisson_volume,_boisson_price,
-                                     _quantite_commandee,_mode_paiement,_motant)
+                                     _quantite_commandee,_mode_paiement,_motant,_date)
 
                 cursor = conn.cursor()
 
@@ -153,10 +154,17 @@ def add_vente_frame(frame):
 
     ############
     montant_label = Label(quantite_info_frame,text="Montant")
-    montant_label.grid(row=8,column=3)
+    montant_label.grid(row=8,column=2)
 
     montant_spinbox = ttk.Spinbox(quantite_info_frame,from_=0,)
-    montant_spinbox.grid(row=9,column=3)
+    montant_spinbox.grid(row=9,column=2)
+
+    ############3
+    date_label = Label(quantite_info_frame,text="Date de la Commande")
+    date_label.grid(row=8,column=3)
+
+    date_entry = DateEntry(quantite_info_frame,selectmode='day')
+    date_entry.grid(row=9,column=3)
 
     ######
     for widget in quantite_info_frame.winfo_children():

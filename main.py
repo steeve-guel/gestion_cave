@@ -1,3 +1,5 @@
+from hashlib import sha256
+import os
 import tkinter as tk
 from tkinter import messagebox
 
@@ -11,6 +13,7 @@ from Frame.fenetre1 import create_frame1
 from Frame.fenetre2 import create_frame2
 from Frame.list_boisson_frame import list_boisson_frame
 from Frame.list_user_frame import list_user_frame
+from Frame.list_ventes_frame import list_ventes_frame
 
 class Application(tk.Tk):
     def __init__(self):
@@ -24,8 +27,11 @@ class Application(tk.Tk):
         
         file_menu = tk.Menu(menu_bar, tearoff=0)
         menu_bar.add_cascade(label="Menu", menu=file_menu)
-        file_menu.add_command(label="Fenêtre 1", command=self.show_frame1)
+        file_menu.add_command(label="admin")
+        file_menu.add_separator()
+        file_menu.add_command(label="Profil", command=self.show_frame1)
         file_menu.add_command(label="Fenêtre 2", command=self.show_frame2)
+        file_menu.add_separator()
         file_menu.add_command(label="Quitter", command=self.quit)
 
         #boisson
@@ -56,15 +62,15 @@ class Application(tk.Tk):
         vente = tk.Menu(menu_bar,tearoff=0)
         menu_bar.add_cascade(label="Vente",menu=vente)
         vente.add_command(label="Ajouter une vente",command=self.show_add_vente)
-        vente.add_command(label="Liste des ventes")
+        vente.add_command(label="Liste des ventes",command=self.show_list_vente)
 
-        #Profil
-        profil = tk.Menu(menu_bar,tearoff=0)
-        menu_bar.add_cascade(label='Profil',menu=profil)
+        # #Profil
+        # profil = tk.Menu(menu_bar,tearoff=0)
+        # menu_bar.add_cascade(label='Profil',menu=profil)
 
-        profil.add_command(label='admin')
-        profil.add_separator()
-        profil.add_command(label='Paramètre du profile')
+        # profil.add_command(label='admin')
+        # profil.add_separator()
+        # profil.add_command(label='Paramètre du profile')
 
         #Aide
         help = tk.Menu(menu_bar,tearoff=0)
@@ -86,6 +92,7 @@ class Application(tk.Tk):
         self.frame4_list_u = tk.Frame(self)
 
         self.frame5_add_v = tk.Frame(self)
+        self.frame5_list_v = tk.Frame(self)
 
         create_frame1(self.frame1)
         create_frame2(self.frame2)
@@ -100,6 +107,7 @@ class Application(tk.Tk):
 
         ###Vente
         add_vente_frame(self.frame5_add_v)
+        list_ventes_frame(self.frame5_list_v)
         
         ################
         self.current_frame = None
@@ -154,18 +162,73 @@ class Application(tk.Tk):
             self.frame5_add_v.pack(fill='both',expand=True)
             self.current_frame = self.frame5_add_v
 
+    def show_list_vente(self):
+        if self.current_frame is not None:
+            self.current_frame.pack_forget()
+            self.frame5_list_v.pack(fill='both',expand=True)
+            self.current_frame = self.frame5_list_v
+
+indicateur_fichier = "premier_lancement.txt"
+
+def premier_lancement():
+    # Vérifie si le fichier existe déjà
+    if not os.path.exists(indicateur_fichier):
+        # Action à exécuter une seule fois
+        print("Ceci s'exécute uniquement au premier lancement.")
+        _user_username="admin"
+        _user_nom="admin"
+        _user_type="Administrateur"
+        _user_ville="Bobo-Dioulasso"
+        _user_phone="67676767"
+        _user_password="admin"
+        hashed_password = sha256(_user_password.encode()).hexdigest()
+
+        data_insert_query = '''INSERT INTO utilisateurs (username, nom, role,
+              password,ville,phone) VALUES (?, ?, ?, ?, ?, ?)'''
+            
+        data_insert_tuple = (_user_username,_user_nom,_user_type,hashed_password,_user_ville,_user_phone)
+
+        conn = sqlite3.connect('data.db')
+
+        cursor = conn.cursor()
+
+        cursor.execute(data_insert_query,data_insert_tuple)
+
+        conn.commit()
+        conn.close()
+        
+        # Crée le fichier pour indiquer que l'action a été exécutée
+        with open(indicateur_fichier, 'w') as f:
+            f.write("Cette action a été exécutée.")
+
 #########Login Fonction
 def check_login():
     username = entry_username.get()
     password = entry_password.get()
-    
-    # Remplace ces conditions par la vérification réelle de tes identifiants
-    if username == "admin" and password == "admin":
+
+    hashed_password = sha256(password.encode()).hexdigest()
+    conn = sqlite3.connect('data.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM utilisateurs WHERE username = ? AND password = ?', (username, hashed_password))
+
+    user = cursor.fetchone()
+
+    if user:
+        # messagebox.showinfo(title="Login Success", message="Connexion reussie.")
         root_login.destroy()  # Fermer la fenêtre de connexion
         app = Application()  # Afficher la fenêtre d'accueil
         app.mainloop()
+        return True
     else:
-        messagebox.showerror("Erreur", "Identifiant ou mot de passe incorrect")
+        messagebox.showerror(title="Error", message="Nom d'utilisateur ou mot de passe invalid.")
+        return False
+    
+    # if username == "admin" and password == "admin":
+    #     root_login.destroy()  # Fermer la fenêtre de connexion
+    #     app = Application()  # Afficher la fenêtre d'accueil
+    #     app.mainloop()
+    # else:
+    #     messagebox.showerror("Erreur", "Identifiant ou mot de passe incorrect")
 
 def on_closing(self):
         # Fermer la connexion à la base de données
@@ -216,13 +279,16 @@ cursor.execute('''
                 boisson_prix_unitaire NUMBER NOT NULL,
                 quantite_commandee NUMBER NOT NULL,
                 mode_paiement TEXT NOT NULL,
-                montant NUMBER TEXT NOT NULL
+                montant NUMBER TEXT NOT NULL,
+                date Date NOT NULL
             )
         ''')
 
 conn.commit()
 
 conn.close()
+
+premier_lancement()
 
 tk.Label(root_login,text="Connexion",font=("Arial",20)).pack(padx=20,pady=10)
 
