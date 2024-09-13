@@ -4,10 +4,13 @@ from tkinter import messagebox
 import sqlite3
 
 from Frame.add_boisson_frame import add_boisson
+from Frame.add_user_frame import add_user_frame
+from Frame.add_vente_frame import add_vente_frame
 from Frame.edit_boisson_frame import modifier_boisson_frame
 from Frame.fenetre1 import create_frame1
 from Frame.fenetre2 import create_frame2
 from Frame.list_boisson_frame import list_boisson_frame
+from Frame.list_user_frame import list_user_frame
 
 class Application(tk.Tk):
     def __init__(self):
@@ -40,13 +43,20 @@ class Application(tk.Tk):
         #Utilisateur
         user = tk.Menu(menu_bar,tearoff=0)
         menu_bar.add_cascade(label='Utilisateurs',menu=user)
-        user.add_command(label='Ajouter un administrateur')
-        user.add_command(label='Liste des administrateur')
+        user.add_command(label='Ajouter un utilisateur',command=self.show_add_user)
+        user.add_separator()
+        user.add_command(label='Liste des utilisateurs',command=self.show_list_user)
         # utilisateur.add_command(label='Paste')
         # utilisateur.add_command(label='Select all')
-        user.add_separator()
-        user.add_command(label='Ajouter un client')
-        user.add_command(label='Liste des clients')
+        # user.add_separator()
+        # user.add_command(label='Ajouter un client')
+        # user.add_command(label='Liste des clients')
+
+        #Ventes
+        vente = tk.Menu(menu_bar,tearoff=0)
+        menu_bar.add_cascade(label="Vente",menu=vente)
+        vente.add_command(label="Ajouter une vente",command=self.show_add_vente)
+        vente.add_command(label="Liste des ventes")
 
         #Profil
         profil = tk.Menu(menu_bar,tearoff=0)
@@ -67,19 +77,35 @@ class Application(tk.Tk):
         # Créer les Frames
         self.frame1 = tk.Frame(self)
         self.frame2 = tk.Frame(self)
+
         self.frame3_add_b = tk.Frame(self)
         self.frame3_list_b = tk.Frame(self)
         self.frame3_edit_b = tk.Frame(self)
-        
+
+        self.frame4_add_u = tk.Frame(self)
+        self.frame4_list_u = tk.Frame(self)
+
+        self.frame5_add_v = tk.Frame(self)
+
         create_frame1(self.frame1)
         create_frame2(self.frame2)
+        ###boisson
         add_boisson(self.frame3_add_b)
         list_boisson_frame(self.frame3_list_b)
         modifier_boisson_frame(self.frame3_edit_b)
+
+        ###User
+        add_user_frame(self.frame4_add_u)
+        list_user_frame(self.frame4_list_u)
+
+        ###Vente
+        add_vente_frame(self.frame5_add_v)
         
+        ################
         self.current_frame = None
         self.show_frame1()
 
+    #####Show frame
     def show_frame1(self):
         if self.current_frame is not None:
             self.current_frame.pack_forget()
@@ -108,8 +134,27 @@ class Application(tk.Tk):
         if self.current_frame is not None:
             self.current_frame.pack_forget()
         self.frame3_edit_b.pack(fill='both',expand=True)
-        self.current_frame = self.frame3_edit_b
+        self.current_frame = self.frame3_edit_b    
 
+    def show_add_user(self):
+        if self.current_frame is not None:
+            self.current_frame.pack_forget()
+            self.frame4_add_u.pack(fill='both',expand=True)
+            self.current_frame = self.frame4_add_u
+
+    def show_list_user(self):
+        if self.current_frame is not None:
+            self.current_frame.pack_forget()
+            self.frame4_list_u.pack(fill='both',expand=True)
+            self.current_frame = self.frame4_list_u
+
+    def show_add_vente(self):
+        if self.current_frame is not None:
+            self.current_frame.pack_forget()
+            self.frame5_add_v.pack(fill='both',expand=True)
+            self.current_frame = self.frame5_add_v
+
+#########Login Fonction
 def check_login():
     username = entry_username.get()
     password = entry_password.get()
@@ -140,8 +185,11 @@ conn.execute('''
             CREATE TABLE IF NOT EXISTS utilisateurs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT NOT NULL,
+                nom TEXT,
                 role TEXT NOT NULL,
-                password TEXT NOT NULL
+                password TEXT NOT NULL,
+                ville TEXT,
+                phone NUMBER
             )
         ''')
 
@@ -152,6 +200,23 @@ cursor.execute('''
                 type TEXT NOT NULL,
                 volume NUMBER NOT NULL,
                 prix NUMBER NOT NULL
+            )
+        ''')
+
+cursor.execute('''
+            CREATE TABLE IF NOT EXISTS ventes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nom_client TEXT NOT NULL,
+                prenom_client TEXT NOT NULL,
+                ville TEXT NOT NULL,
+                telephone TEXT NOT NULL,
+                boisson_name TEXT NOT NULL,
+                boisson_type TEXT NOT NULL,
+                boisson_volume NUMBER NOT NULL,
+                boisson_prix_unitaire NUMBER NOT NULL,
+                quantite_commandee NUMBER NOT NULL,
+                mode_paiement TEXT NOT NULL,
+                montant NUMBER TEXT NOT NULL
             )
         ''')
 
