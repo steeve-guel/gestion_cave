@@ -17,7 +17,7 @@ def add_user_frame(frame):
 
         _user_username = user_username_entry.get()
         _user_nom = user_nom_entry.get()
-        print(_user_nom)
+       
         _user_type = user_type_entry.get()
         _user_ville = user_ville_entry.get()
         _user_phone = user_phone_spingbox.get()

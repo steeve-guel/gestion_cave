@@ -9,8 +9,8 @@ from Frame.add_boisson_frame import add_boisson
 from Frame.add_user_frame import add_user_frame
 from Frame.add_vente_frame import add_vente_frame
 from Frame.edit_boisson_frame import modifier_boisson_frame
-from Frame.fenetre1 import create_frame1
-from Frame.fenetre2 import create_frame2
+from Frame.profil import create_frame1
+from Frame.Dashboard import create_frame2
 from Frame.list_boisson_frame import list_boisson_frame
 from Frame.list_user_frame import list_user_frame
 from Frame.list_ventes_frame import list_ventes_frame
@@ -27,10 +27,12 @@ class Application(tk.Tk):
         
         file_menu = tk.Menu(menu_bar, tearoff=0)
         menu_bar.add_cascade(label="Menu", menu=file_menu)
-        file_menu.add_command(label="admin")
-        file_menu.add_separator()
+        # file_menu.add_command(label="admin")
+        # file_menu.add_separator()
         file_menu.add_command(label="Profil", command=self.show_frame1)
-        file_menu.add_command(label="Fenêtre 2", command=self.show_frame2)
+        file_menu.add_command(label="Dashboard", command=self.show_frame2)
+        file_menu.add_separator()
+        file_menu.add_command(label="Deconnexion",command=self.deconnexion)
         file_menu.add_separator()
         file_menu.add_command(label="Quitter", command=self.quit)
 
@@ -168,138 +170,162 @@ class Application(tk.Tk):
             self.frame5_list_v.pack(fill='both',expand=True)
             self.current_frame = self.frame5_list_v
 
-indicateur_fichier = "premier_lancement.txt"
+    def deconnexion(self):
+        self.destroy()  # Ferme la fenêtre d'accueil
+        connexion_frame()  # Affiche la fenêtre de connexion
 
-def premier_lancement():
-    # Vérifie si le fichier existe déjà
-    if not os.path.exists(indicateur_fichier):
-        # Action à exécuter une seule fois
-        print("Ceci s'exécute uniquement au premier lancement.")
-        _user_username="admin"
-        _user_nom="admin"
-        _user_type="Administrateur"
-        _user_ville="Bobo-Dioulasso"
-        _user_phone="67676767"
-        _user_password="admin"
-        hashed_password = sha256(_user_password.encode()).hexdigest()
+def connexion_frame():
 
-        data_insert_query = '''INSERT INTO utilisateurs (username, nom, role,
-              password,ville,phone) VALUES (?, ?, ?, ?, ?, ?)'''
+    indicateur_fichier = "premier_lancement.txt"
+
+    def premier_lancement():
+        # Vérifie si le fichier existe déjà
+        if not os.path.exists(indicateur_fichier):
+            # Action à exécuter une seule fois
+            print("Ceci s'exécute uniquement au premier lancement.")
+            _user_username="admin"
+            _user_nom="admin"
+            _user_type="Administrateur"
+            _user_ville="Bobo-Dioulasso"
+            _user_phone="67676767"
+            _user_password="admin"
+            hashed_password = sha256(_user_password.encode()).hexdigest()
+
+            data_insert_query = '''INSERT INTO utilisateurs (username, nom, role,
+                password,ville,phone) VALUES (?, ?, ?, ?, ?, ?)'''
+                
+            data_insert_tuple = (_user_username,_user_nom,_user_type,hashed_password,_user_ville,_user_phone)
+
+            conn = sqlite3.connect('data.db')
+
+            cursor = conn.cursor()
+
+            cursor.execute(data_insert_query,data_insert_tuple)
+
+            conn.commit()
+            conn.close()
             
-        data_insert_tuple = (_user_username,_user_nom,_user_type,hashed_password,_user_ville,_user_phone)
+            # Crée le fichier pour indiquer que l'action a été exécutée
+            with open(indicateur_fichier, 'w') as f:
+                f.write("Cette action a été exécutée.")
 
+
+    #########Login Fonction
+    def check_login():
+        username = entry_username.get()
+        password = entry_password.get()
+
+        hashed_password = sha256(password.encode()).hexdigest()
         conn = sqlite3.connect('data.db')
-
         cursor = conn.cursor()
+        cursor.execute('SELECT * FROM utilisateurs WHERE username = ? AND password = ?', (username, hashed_password))
 
-        cursor.execute(data_insert_query,data_insert_tuple)
+        user = cursor.fetchone()
 
-        conn.commit()
-        conn.close()
+        if user and user[3]=="Administrateur":
+            # messagebox.showinfo(title="Login Success", message="Connexion reussie.")
+            print( user[1])
+
+            cursor.execute('''INSERT INTO connexion (user_id, username) VALUES (?, ?)''',(user[0],user[1]))
+
+            conn.commit()
+
+            root_login.destroy()  # Fermer la fenêtre de connexion
+            app = Application()  # Afficher la fenêtre d'accueil
+            app.mainloop()
+            conn.close()
+            return True
+        else:
+            messagebox.showerror(title="Error", message="Nom d'utilisateur ou mot de passe invalid.")
+            return False
         
-        # Crée le fichier pour indiquer que l'action a été exécutée
-        with open(indicateur_fichier, 'w') as f:
-            f.write("Cette action a été exécutée.")
+        # if username == "admin" and password == "admin":
+        #     root_login.destroy()  # Fermer la fenêtre de connexion
+        #     app = Application()  # Afficher la fenêtre d'accueil
+        #     app.mainloop()
+        # else:
+        #     messagebox.showerror("Erreur", "Identifiant ou mot de passe incorrect")
 
-#########Login Fonction
-def check_login():
-    username = entry_username.get()
-    password = entry_password.get()
+    def on_closing(self):
+            # Fermer la connexion à la base de données
+            self.cursor.close()
+            self.conn.close()
+            self.destroy()   
 
-    hashed_password = sha256(password.encode()).hexdigest()
+    # Création de la fenêtre de connexion
+    root_login = tk.Tk()
+    root_login.title("Connexion")
+    root_login.geometry("300x300")
+
     conn = sqlite3.connect('data.db')
     cursor = conn.cursor()
-    cursor.execute('SELECT * FROM utilisateurs WHERE username = ? AND password = ?', (username, hashed_password))
+            
+    conn.execute('''
+                CREATE TABLE IF NOT EXISTS utilisateurs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT NOT NULL UNIQUE,
+                    nom TEXT,
+                    role TEXT NOT NULL,
+                    password TEXT NOT NULL,
+                    ville TEXT,
+                    phone NUMBER
+                )
+            ''')
 
-    user = cursor.fetchone()
+    cursor.execute('''
+                CREATE TABLE IF NOT EXISTS boisson (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    boisson_name TEXT NOT NULL,
+                    type TEXT NOT NULL,
+                    volume NUMBER NOT NULL,
+                    prix NUMBER NOT NULL
+                )
+            ''')
 
-    if user:
-        # messagebox.showinfo(title="Login Success", message="Connexion reussie.")
-        root_login.destroy()  # Fermer la fenêtre de connexion
-        app = Application()  # Afficher la fenêtre d'accueil
-        app.mainloop()
-        return True
-    else:
-        messagebox.showerror(title="Error", message="Nom d'utilisateur ou mot de passe invalid.")
-        return False
-    
-    # if username == "admin" and password == "admin":
-    #     root_login.destroy()  # Fermer la fenêtre de connexion
-    #     app = Application()  # Afficher la fenêtre d'accueil
-    #     app.mainloop()
-    # else:
-    #     messagebox.showerror("Erreur", "Identifiant ou mot de passe incorrect")
+    cursor.execute('''
+                CREATE TABLE IF NOT EXISTS ventes (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    nom_client TEXT NOT NULL,
+                    prenom_client TEXT NOT NULL,
+                    ville TEXT NOT NULL,
+                    telephone TEXT NOT NULL,
+                    boisson_name TEXT NOT NULL,
+                    boisson_type TEXT NOT NULL,
+                    boisson_volume NUMBER NOT NULL,
+                    boisson_prix_unitaire NUMBER NOT NULL,
+                    quantite_commandee NUMBER NOT NULL,
+                    mode_paiement TEXT NOT NULL,
+                    montant NUMBER TEXT NOT NULL,
+                    date Date NOT NULL
+                )
+            ''')
 
-def on_closing(self):
-        # Fermer la connexion à la base de données
-        self.cursor.close()
-        self.conn.close()
-        self.destroy()   
+    cursor.execute('''
+                CREATE TABLE IF NOT EXISTS connexion (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    username TEXT NOT NULL 
+                )
+            ''')
 
-# Création de la fenêtre de connexion
-root_login = tk.Tk()
-root_login.title("Connexion")
-root_login.geometry("300x300")
+    conn.commit()
 
-conn = sqlite3.connect('data.db')
-cursor = conn.cursor()
-        
-conn.execute('''
-            CREATE TABLE IF NOT EXISTS utilisateurs (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT NOT NULL,
-                nom TEXT,
-                role TEXT NOT NULL,
-                password TEXT NOT NULL,
-                ville TEXT,
-                phone NUMBER
-            )
-        ''')
+    conn.close()
 
-cursor.execute('''
-            CREATE TABLE IF NOT EXISTS boisson (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                boisson_name TEXT NOT NULL,
-                type TEXT NOT NULL,
-                volume NUMBER NOT NULL,
-                prix NUMBER NOT NULL
-            )
-        ''')
+    premier_lancement()
 
-cursor.execute('''
-            CREATE TABLE IF NOT EXISTS ventes (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                nom_client TEXT NOT NULL,
-                prenom_client TEXT NOT NULL,
-                ville TEXT NOT NULL,
-                telephone TEXT NOT NULL,
-                boisson_name TEXT NOT NULL,
-                boisson_type TEXT NOT NULL,
-                boisson_volume NUMBER NOT NULL,
-                boisson_prix_unitaire NUMBER NOT NULL,
-                quantite_commandee NUMBER NOT NULL,
-                mode_paiement TEXT NOT NULL,
-                montant NUMBER TEXT NOT NULL,
-                date Date NOT NULL
-            )
-        ''')
+    tk.Label(root_login,text="Connexion",font=("Arial",20)).pack(padx=20,pady=10)
 
-conn.commit()
+    tk.Label(root_login, text="Nom d'utilisateur").pack(padx=20, pady=5)
+    entry_username = tk.Entry(root_login)
+    entry_username.pack(padx=20, pady=5)
 
-conn.close()
+    tk.Label(root_login, text="Mot de passe").pack(padx=20, pady=5)
+    entry_password = tk.Entry(root_login, show="*")
+    entry_password.pack(padx=20, pady=5)
 
-premier_lancement()
+    tk.Button(root_login, text="Se connecter", command=check_login).pack(padx=20, pady=20)
 
-tk.Label(root_login,text="Connexion",font=("Arial",20)).pack(padx=20,pady=10)
+    root_login.mainloop()
 
-tk.Label(root_login, text="Nom d'utilisateur").pack(padx=20, pady=5)
-entry_username = tk.Entry(root_login)
-entry_username.pack(padx=20, pady=5)
-
-tk.Label(root_login, text="Mot de passe").pack(padx=20, pady=5)
-entry_password = tk.Entry(root_login, show="*")
-entry_password.pack(padx=20, pady=5)
-
-tk.Button(root_login, text="Se connecter", command=check_login).pack(padx=20, pady=20)
-
-root_login.mainloop()
+connexion_frame()
